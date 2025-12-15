@@ -13,20 +13,8 @@ from amaranth.sim import SimulatorContext
 
 from colorama import Fore, Style
 
-from luna.gateware.interface.utmi import UTMIInterface, UTMIOperatingMode
+from luna.gateware.interface.utmi import UTMIOperatingMode
 from luna.gateware.usb.usb2.packet import USBPacketID
-from luna.gateware.usb.usb2.control import USBControlEndpoint
-from luna.usb2 import USBDevice, USBStreamInEndpoint
-from usb_protocol.emitters import DeviceDescriptorCollection
-
-
-def USBHSDevice(full_speed_only=False, **kwargs):
-    usb = USBDevice(**kwargs)
-    # workaround https://github.com/greatscottgadgets/luna/issues/276
-    usb.always_fs = full_speed_only
-    usb.data_clock = 60e6
-    return usb
-
 
 class USBPcapWriter:
     """
@@ -78,74 +66,6 @@ class BusEvent(enum.Enum):
     DEV_CHIRP_J  = 3   # Device chirping J
     HOST_CHIRP_K = 4   # Host chirping K
     HOST_CHIRP_J = 5   # Host chirping J
-
-
-class FakeUSBMIDIDevice(Elaboratable):
-
-    """
-    Simple USB device only used for integration tests.
-    Exposes a MIDI bulk OUT endpoint that emits upcounting data.
-    """
-
-    def __init__(self, max_packet_size=64, full_speed_only=False):
-        self.max_packet_size = max_packet_size
-        self.full_speed_only = full_speed_only
-        self.utmi = UTMIInterface()
-        super().__init__()
-
-    def create_descriptors(self):
-        descriptors = DeviceDescriptorCollection()
-        with descriptors.DeviceDescriptor() as d:
-            d.idVendor           = 0x16d0
-            d.idProduct          = 0xf3b
-            d.iManufacturer      = "LUNA"
-            d.iProduct           = "Test Device"
-            d.iSerialNumber      = "1234"
-            d.bNumConfigurations = 1
-            d.bMaxPacketSize0    = self.max_packet_size
-
-        with descriptors.ConfigurationDescriptor() as c:
-            with c.InterfaceDescriptor() as i:
-                i.bInterfaceNumber   = 0
-                i.bInterfaceClass    = 0x01  # Audio
-                i.bInterfaceSubclass = 0x03  # MIDISTREAMING
-                i.bInterfaceProtocol = 0x00  # AUDIO_1_0
-                with i.EndpointDescriptor() as e:
-                    e.bEndpointAddress = 0x01
-                    e.wMaxPacketSize   = self.max_packet_size
-                with i.EndpointDescriptor() as e:
-                    e.bEndpointAddress = 0x84
-                    e.wMaxPacketSize   = self.max_packet_size
-        return descriptors
-
-    def elaborate(self, platform):
-
-        m = Module()
-        m.submodules.usb = usb = USBHSDevice(full_speed_only=self.full_speed_only, bus=self.utmi)
-        descriptors = self.create_descriptors()
-        control_endpoint = USBControlEndpoint(utmi=self.utmi, max_packet_size=self.max_packet_size)
-        control_endpoint.add_standard_request_handlers(descriptors)
-        usb.add_endpoint(control_endpoint)
-
-        # Counting endpoint OUT
-        stream_ep = USBStreamInEndpoint(
-            endpoint_number=4,
-            max_packet_size=self.max_packet_size
-        )
-        usb.add_endpoint(stream_ep)
-        counter = Signal(8)
-        with m.If(stream_ep.stream.ready):
-            m.d.usb += counter.eq(counter + 1)
-        m.d.comb += [
-            stream_ep.stream.valid    .eq(1),
-            stream_ep.stream.payload  .eq(counter)
-        ]
-
-        m.d.comb += [
-            usb.connect          .eq(1),
-            usb.full_speed_only  .eq(self.full_speed_only),
-        ]
-        return m
 
 
 def connect_utmi(m, hst_utmi, dev_utmi):
