@@ -39,7 +39,13 @@ guh/
  # more engines wanted!
 ```
 
-## Simulation / Testing
+# Setup
+
+Install [PDM](https://pdm-project.org/en/latest/#installation) and run `pdm install` in the root of this repository to install all dependencies to a virtual environment.
+
+# Simulation / Testing
+
+Run `pdm test` to execute the test suite. Or, for more granularity, run something like `pdm run python3 -m pytest tests/test_integration.py -srv` to see a nice packet trace of simulated host/device traffic - this also emits a pcap for inspection.
 
 In `tests/` you will find:
 
@@ -64,13 +70,19 @@ Examples require the `LUNA_PLATFORM` environment variable to select your hardwar
 
 **Cynthion:**
 ```bash
+# replug Cynthion, then:
+apollo force-offline
 LUNA_PLATFORM=cynthion.gateware.platform:CynthionPlatformRev1D4 pdm run python3 examples/midi_host.py --upload
 ```
+
+On Cynthion for some reason I often get `bitstream provides data past the device's SRAM array / ffffffff` - even though the bitstream runs fine. So maybe you can ignore this.
 
 **Tiliqua R4/R5:**
 ```bash
 LUNA_PLATFORM=guh.platform.tiliqua:TiliquaR4R5Platform pdm run python3 examples/midi_host.py --upload
 ```
+
+Then open up a serial terminal to see some activity, or just look at the LEDs.
 
 Replace `midi_host.py` with any other example.
 
