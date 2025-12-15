@@ -74,13 +74,13 @@ LUNA_PLATFORM=guh.platform.tiliqua:TiliquaR4R5Platform pdm run python3 examples/
 
 Replace `midi_host.py` with any other example.
 
+For more advanced usage, see how this library is used in the [Tiliqua](https://github.com/apfaudio/tiliqua) project. TODO (seb): add links to MSC SoC DMA host in Tiliqua repository once it is properly integrated.
+
 ## Important Notes
 
 **VBUS Power:** These examples hard-wire the VBUS output to ON, because this repository does not include drivers for the I2C Type-C CC controller (TUSB322I). The full [Tiliqua](https://github.com/apfaudio/tiliqua) repository includes these drivers and handles VBUS properly.
 
 **Tiliqua USB-C Adapter:** Tiliqua has a USB Type-C receptacle instead of Type-A like Cynthion. Since this repository does not include TUSB322I drivers, you must use a **USB-C to USB-A adapter** to connect USB devices. The full Tiliqua repository does not require an adapter.
-
-For more advanced usage, see how this library is used in the [Tiliqua](https://github.com/apfaudio/tiliqua) project.
 
 # License
 
